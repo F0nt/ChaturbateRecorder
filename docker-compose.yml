@@ -1,0 +1,7 @@
+capturebate:
+  restart: on-failure:5
+  image: bzsklb/chaturbaterecorder:latest
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./config:/root/ChaturbateRecorder/config
+    - /data:/data

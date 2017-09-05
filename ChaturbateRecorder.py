@@ -1,10 +1,10 @@
 import time, datetime, os, sys, requests, configparser, re, subprocess, json
 from queue import Queue
-from livestreamer import Livestreamer
+from streamlink import Streamlink
 from threading import Thread
 
 Config = configparser.ConfigParser()
-Config.read(sys.path[0] + "/config.conf")
+Config.read(sys.path[0] + "config/config.conf")
 save_directory = Config.get('paths', 'save_directory')
 wishlist = Config.get('paths', 'wishlist')
 interval = int(Config.get('settings', 'checkInterval'))
@@ -26,7 +26,7 @@ def startRecording(model):
     try:
         result = requests.get('https://chaturbate.com/api/chatvideocontext/{}/'.format(model)).text
         result = json.loads(result)
-        session = Livestreamer()
+        session = Streamlink()
         session.set_option('http-headers', "referer=https://www.chaturbate.com/{}".format(model))
         streams = session.streams("hlsvariant://{}".format(result['hls_source'].rsplit('?')[0]))
         stream = streams["best"]
