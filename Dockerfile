@@ -6,4 +6,3 @@ RUN git clone https://github.com/bzsklb/ChaturbateRecorder /root/ChaturbateRecor
 RUN apk del git gcc musl-dev --no-cache
 RUN rm -Rf /tmp/*
 CMD cd /root/ChaturbateRecorder && python ChaturbateRecorder.py
-
