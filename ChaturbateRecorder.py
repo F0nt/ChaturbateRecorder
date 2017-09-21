@@ -33,7 +33,7 @@ def startRecording(model):
     try:
         result = requests.get('https://chaturbate.com/api/chatvideocontext/{}/'.format(model)).text
         result = json.loads(result)
-        session = Livestreamer()
+        session = Streamlink()
         session.set_option('http-headers', "referer=https://www.chaturbate.com/{}".format(model))
         streams = session.streams("hlsvariant://{}".format(result['hls_source'].rsplit('?')[0]))
         stream = streams["best"]
