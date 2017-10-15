@@ -3,5 +3,5 @@ capturebate:
   image: bzsklb/chaturbaterecorder:latest
   volumes:
     - /etc/localtime:/etc/localtime:ro
-    - ./config:/root/ChaturbateRecorder/config
+    - ./config:/config
     - /data:/data
