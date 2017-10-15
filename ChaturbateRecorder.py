@@ -9,7 +9,7 @@ from streamlink import Streamlink
 from threading import Thread
 
 Config = configparser.ConfigParser()
-Config.read(sys.path[0] + "config/config.conf")
+Config.read(sys.path[0] + "/config/config.conf")
 save_directory = Config.get('paths', 'save_directory')
 wishlist = Config.get('paths', 'wishlist')
 interval = int(Config.get('settings', 'checkInterval'))
@@ -146,3 +146,4 @@ if __name__ == '__main__':
             print("the following models are being recorded: {}".format(recording), end="\r")
             time.sleep(1)
             sys.stdout.write("\033[F")
+            
