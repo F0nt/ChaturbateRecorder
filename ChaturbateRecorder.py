@@ -1,7 +1,6 @@
-import time, datetime, os, sys, requests, configparser, re, subprocess, json
+import time, datetime, os, sys, requests, configparser, re, subprocess
 if os.name == 'nt':
     import ctypes
-
     kernel32 = ctypes.windll.kernel32
     kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 from queue import Queue
@@ -47,6 +46,7 @@ def startRecording(model):
         directory = filePath.rsplit('/', 1)[0]+'/'
         if not os.path.exists(directory):
             os.makedirs(directory)
+        if model in recording: return
         with open(filePath, 'wb') as f:
             recording.append(model)
             while model in wanted:
@@ -56,21 +56,20 @@ def startRecording(model):
                 except:
                     f.close()
                     break
-            recording.remove(model)
-            if postProcessingCommand != "":
-                processingQueue.put({'model':model, 'path':filePath, 'gender':gender})
-            elif completed_directory != "":
-                finishedDir = completed_directory.format(path=save_directory, model=model,
-                            gender=gender, seconds=now.strftime("%S"),
-                            minutes=now.strftime("%M"),hour=now.strftime("%H"), day=now.strftime("%d"),
-                            month=now.strftime("%m"), year=now.strftime("%Y"))
+        if postProcessingCommand:
+            processingQueue.put({'model':model, 'path':filePath, 'gender':gender})
+        elif completed_directory:
+            finishedDir = completed_directory.format(path=save_directory, model=model,
+                        gender=gender, seconds=now.strftime("%S"),
+                        minutes=now.strftime("%M"),hour=now.strftime("%H"), day=now.strftime("%d"),
+                        month=now.strftime("%m"), year=now.strftime("%Y"))
 
-                if not os.path.exists(finishedDir):
-                    os.makedirs(finishedDir)
-                os.rename(filePath, finishedDir+'/'+filePath.rsplit['/',1][0])
+            if not os.path.exists(finishedDir):
+                os.makedirs(finishedDir)
+            os.rename(filePath, finishedDir+'/'+filePath.rsplit['/',1][0])
+    except: pass
     finally:
-        if model in recording:
-            recording.remove(model)
+        if model in recording:recording.remove(model)
 def postProcess():
     global processingQueue
     global postProcessingCommand
@@ -91,25 +90,23 @@ def getOnlineModels():
     for gender in genders:
         try:
             data = {'categories': gender, 'num': 127}
-            result = requests.post("https://roomlister.stream.highwebmedia.com/session/start/", data=data).text
-
-            result = json.loads(result)
+            result = requests.post("https://roomlister.stream.highwebmedia.com/session/start/", data=data).json()
             length = len(result['rooms'])
-            online.extend([m['username'] for m in result['rooms']])
+            online.extend([m['username'].lower() for m in result['rooms']])
             data['key'] = result['key']
             while length == 127:
-                result = requests.post("https://roomlister.stream.highwebmedia.com/session/next/", data=data).text
-                result = json.loads(result)
+                result = requests.post("https://roomlister.stream.highwebmedia.com/session/next/", data=data).json()
                 length = len(result['rooms'])
                 data['key'] = result['key']
-                online.extend([m['username'] for m in result['rooms']])
-        except json.decoder.JSONDecodeError:
+                online.extend([m['username'].lower() for m in result['rooms']])
+        except:
             break
-        except requests.exceptions.ConnectionError:pass
     f = open(wishlist, 'r')
     wanted =  list(set(f.readlines()))
     wanted = [m.strip('\n').split('chaturbate.com/')[-1].lower().strip().replace('/', '') for m in wanted]
-    wantedModels = list(set(wanted).intersection(online).difference(recording))
+    #wantedModels = list(set(wanted).intersection(online).difference(recording))
+    '''new method for building list - testing issue #19 yet again'''
+    wantedModels = [m for m in (list(set(wanted))) if m in online and m not in recording]
     for theModel in wantedModels:
             thread = Thread(target=startRecording, args=(theModel,))
             thread.start()
@@ -146,4 +143,3 @@ if __name__ == '__main__':
             print("the following models are being recorded: {}".format(recording), end="\r")
             time.sleep(1)
             sys.stdout.write("\033[F")
-            
