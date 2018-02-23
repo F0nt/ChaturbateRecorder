@@ -1,4 +1,4 @@
-capturebate:
+chaturbaterecorder:
   restart: on-failure:5
   image: bzsklb/chaturbaterecorder:latest
   volumes:
