@@ -1,8 +1,12 @@
 import time, datetime, os, sys, requests, configparser, re, subprocess
+from bs4 import BeautifulSoup
 if os.name == 'nt':
     import ctypes
     kernel32 = ctypes.windll.kernel32
     kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    slash = "\\"
+else:
+    slash = "/"
 from queue import Queue
 from streamlink import Streamlink
 from threading import Thread
@@ -15,6 +19,8 @@ interval = int(Config.get('settings', 'checkInterval'))
 genders = re.sub(' ', '', Config.get('settings', 'genders')).split(",")
 directory_structure = Config.get('paths', 'directory_structure').lower()
 postProcessingCommand = Config.get('settings', 'postProcessingCommand')
+username = Config.get("login", "username")
+password = Config.get("login", "password")
 try:
     postProcessingThreads = int(Config.get('settings', 'postProcessingThreads'))
 except ValueError:
@@ -26,6 +32,40 @@ def now():
 
 recording = []
 wanted = []
+
+def login():
+    s.headers = {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
+        'referer': 'https://chaturbate.com/',
+        'origin': 'https://chaturbate.com',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'en-US,en;q=0.8',
+        'cache-control': 'max-age=0',
+        'upgrade-insecure-requests': '1',
+        'content-type': 'application/x-www-form-urlencoded',
+        }
+
+
+    data = {'username': username, 'password': password, 'next': ''}
+    result = s.get("https://chaturbate.com/")
+    soup = BeautifulSoup(result.text, "html.parser")
+    data['csrfmiddlewaretoken'] = soup.find('input', {'name': 'csrfmiddlewaretoken'}).get('value')
+
+    result = s.post('https://chaturbate.com/auth/login/?next=/', data=data, cookies=result.cookies)
+    if not checkLogin(result):
+        print('Login failed. Check that your username and password is set correctly in the configuration file.')
+        exit()
+    else:
+        print('Logged in successfully.')
+
+
+def checkLogin(result):
+    soup = BeautifulSoup(result.text, "html.parser")
+    if soup.find('div', {'id': 'user_information'}) is not None:
+        return True
+    else:
+        return False
 
 def startRecording(model):
     global postProcessingCommand
@@ -43,7 +83,7 @@ def startRecording(model):
                                               minutes=now.strftime("%M"), hour=now.strftime("%H"),
                                               day=now.strftime("%d"),
                                               month=now.strftime("%m"), year=now.strftime("%Y"))
-        directory = filePath.rsplit('/', 1)[0]+'/'
+        directory = filePath.rsplit(slash, 1)[0]+slash
         if not os.path.exists(directory):
             os.makedirs(directory)
         if model in recording: return
@@ -66,10 +106,12 @@ def startRecording(model):
 
             if not os.path.exists(finishedDir):
                 os.makedirs(finishedDir)
-            os.rename(filePath, finishedDir+'/'+filePath.rsplit['/',1][0])
-    except: pass
+            os.rename(filePath, finishedDir+slash+filePath.rsplit[slash,1][0])
+    except: 
+        pass
     finally:
-        if model in recording:recording.remove(model)
+        if model in recording:
+            recording.remove(model)
 def postProcess():
     global processingQueue
     global postProcessingCommand
@@ -79,14 +121,15 @@ def postProcess():
         parameters = processingQueue.get()
         model = parameters['model']
         path = parameters['path']
-        filename = path.rsplit('/', 1)[1]
+        filename = path.rsplit(slash, 1)[1]
         gender = parameters['gender']
-        directory = path.rsplit('/', 1)[0]+'/'
+        directory = path.rsplit(slash, 1)[0]+slash
         subprocess.run(postProcessingCommand.split() + [path, filename, directory, model, gender])
 
 def getOnlineModels():
     online = []
     global wanted
+    s = requests.session()
     for gender in genders:
         try:
             data = {'categories': gender, 'num': 127}
@@ -114,10 +157,15 @@ def getOnlineModels():
 
 
 if __name__ == '__main__':
+    s = requests.session()
+    result = s.get('https://chaturbate.com/')
+    if not checkLogin(result):
+        login()
     AllowedGenders = ['female', 'male', 'trans', 'couple']
     for gender in genders:
         if gender.lower() not in AllowedGenders:
-            print(gender, "is not an acceptable gender, options are: female, male, trans, and couple - please correct your config file")
+            print(gender, "is not an acceptable gender. Options are as follows: female, male, trans, and couple.")
+            print("Please correct your config file.")
             exit()
     genders = [a.lower()[0] for a in genders]
     print()
@@ -133,13 +181,13 @@ if __name__ == '__main__':
         sys.stdout.write("\033[K")
         print( now(),"{} model(s) are being recorded. Getting list of online models now".format(len(recording)))
         sys.stdout.write("\033[K")
-        print("the following models are being recorded: {}".format(recording), end="\r")
+        print("The following models are being recorded: {}".format(recording), end="\r")
         getOnlineModels()
         sys.stdout.write("\033[F")
         for i in range(interval, 0, -1):
             sys.stdout.write("\033[K")
             print(now(), "{} model(s) are being recorded. Next check in {} seconds".format(len(recording), i))
             sys.stdout.write("\033[K")
-            print("the following models are being recorded: {}".format(recording), end="\r")
+            print("The following models are being recorded: {}".format(recording), end="\r")
             time.sleep(1)
             sys.stdout.write("\033[F")
