@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 followed = []
 
 Config = configparser.ConfigParser()
-Config.read(sys.path[0] + "/config.conf")
+Config.read(sys.path[0] + "/config/config.conf")
 wishlist = Config.get('paths', 'wishlist')
 username = Config.get('login', 'username')
 password = Config.get('login', 'password')
@@ -14,7 +14,7 @@ password = Config.get('login', 'password')
 
 def login():
     s.headers = {
-        'user-agent': 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36',
         'referer': 'https://chaturbate.com/',
         'origin': 'https://chaturbate.com',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
