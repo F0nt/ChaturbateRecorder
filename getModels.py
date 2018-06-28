@@ -4,7 +4,7 @@ from queue import Queue
 from bs4 import BeautifulSoup
 
 Config = configparser.ConfigParser()
-Config.read(sys.path[0] + "/config.conf")
+Config.read(sys.path[0] + "/config/config.conf")
 genders = re.sub(' ', '', Config.get('settings', 'genders')).split(",")
 lastPage = {'female': 100, 'couple': 100, 'trans': 100, 'male': 100}
 
